@@ -140,3 +140,40 @@ export async function simulateFraudReadiness(
   );
   return data;
 }
+
+// --- Metrics ---
+
+export interface DailyMetric {
+  date: string;
+  total_requests: number;
+  auto_approved: number;
+  auto_blocked: number;
+  sent_to_review: number;
+  accuracy_percent: number;
+  false_positive_rate: number;
+  false_negative_rate: number;
+}
+
+export interface CalibrationStat {
+  date: string;
+  reviewed_count: number;
+  correct_count: number;
+  incorrect_count: number;
+  accuracy_percent: number;
+  avg_confidence_correct: number;
+  avg_confidence_incorrect: number;
+  overconfidence_rate: number;
+  underconfidence_rate: number;
+}
+
+export async function getDailyMetrics(): Promise<DailyMetric[]> {
+  const { data } = await apiClient.get<DailyMetric[]>('/api/metrics/daily');
+  return data;
+}
+
+export async function getCalibrationMetrics(): Promise<CalibrationStat[]> {
+  const { data } = await apiClient.get<CalibrationStat[]>(
+    '/api/metrics/calibration'
+  );
+  return data;
+}

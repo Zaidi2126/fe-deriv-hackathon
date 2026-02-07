@@ -4,6 +4,7 @@ import { StatusBadge } from '../components/StatusBadge';
 import { DecisionSimulator } from '../components/DecisionSimulator';
 import { RiskTrajectory } from '../components/RiskTrajectory';
 import { FraudReadiness } from '../components/FraudReadiness';
+import { Metrics } from '../components/Metrics';
 
 type TabId = 'simulator' | 'trajectory' | 'readiness' | 'metrics';
 
@@ -13,14 +14,6 @@ const TABS: { id: TabId; label: string }[] = [
   { id: 'readiness', label: 'Fraud Readiness' },
   { id: 'metrics', label: 'Metrics' },
 ];
-
-function PlaceholderCard({ title }: { title: string }) {
-  return (
-    <div className="rounded border border-gray-200 bg-gray-50 p-8 text-center text-gray-500">
-      {title} — coming soon
-    </div>
-  );
-}
 
 export function Home() {
   const [connected, setConnected] = useState<boolean | null>(null);
@@ -69,7 +62,7 @@ export function Home() {
         {activeTab === 'simulator' && <DecisionSimulator />}
         {activeTab === 'trajectory' && <RiskTrajectory />}
         {activeTab === 'readiness' && <FraudReadiness />}
-        {activeTab === 'metrics' && <PlaceholderCard title="Metrics" />}
+        {activeTab === 'metrics' && <Metrics />}
       </main>
     </div>
   );
