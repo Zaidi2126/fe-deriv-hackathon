@@ -1,73 +1,61 @@
-# React + TypeScript + Vite
+# AI Payments Approval & Fraud Intelligence — Frontend Demo
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Demo console for a fintech fraud and payments approval system. This React app visualizes decisions, risk trajectory, fraud-readiness simulations, and metrics from a Django backend.
 
-Currently, two official plugins are available:
+## Tech
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- React 19 + Vite 7 + TypeScript
+- Tailwind CSS, Axios
+- No authentication; backend base URL configurable via env
 
-## React Compiler
+## How to run
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+1. **Backend** must be running and reachable (see backend repo). Set base URL if needed:
+   ```bash
+   # optional; default is http://127.0.0.1:8000
+   echo "VITE_API_BASE_URL=http://127.0.0.1:8000" > .env
+   ```
+2. **Install and start frontend:**
+   ```bash
+   npm install
+   npm run dev
+   ```
+3. Open **http://localhost:5173**
 
-## Expanding the ESLint configuration
+## Required backend endpoints
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+| Method | Path | Purpose |
+|--------|------|---------|
+| GET | `/health` | Health check |
+| POST | `/api/payouts/decision` | Single payout decision |
+| GET | `/api/users/<user_id>/risk-trajectory?days=7\|14\|30` | Risk trajectory over time |
+| POST | `/api/fraud-readiness/simulate` | Fraud readiness scenario simulation |
+| GET | `/api/metrics/daily` | Daily metrics list |
+| GET | `/api/metrics/calibration` | Calibration stats list |
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+## Demo script (~60 seconds)
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+Use this order to run the full demo in about a minute.
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+1. **Decision Simulator**
+   - Click **Clean Approve** (Quick Fill), then **Get decision**.
+   - Click **Geo VPN Anomaly**, then **Get decision** (or run 2 presets of your choice).
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+2. **Risk Trajectory**
+   - Open the **Risk Trajectory** tab.
+   - Keep `demo_user_0_0` (or use another seeded user), click **Load trajectory**.
+   - Check chart and “Last 10 points” table.
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+3. **Fraud Readiness**
+   - Open the **Fraud Readiness** tab.
+   - Click **Run simulation** (all scenarios selected).
+   - Review result cards per pattern.
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+4. **Metrics**
+   - Open the **Metrics** tab.
+   - Tables auto-load; use **Refresh metrics** if needed.
+   - Confirm Daily Metrics and Calibration Stats tables.
+
+## Demo Mode panel
+
+In the app, open the **Demo Mode** panel (under the header) for copy-paste commands to start backend and frontend and links to the app and backend health.

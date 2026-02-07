@@ -15,6 +15,49 @@ const TABS: { id: TabId; label: string }[] = [
   { id: 'metrics', label: 'Metrics' },
 ];
 
+function DemoModePanel() {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="border-b border-gray-200 bg-gray-50">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        className="w-full flex items-center justify-between px-6 py-3 text-left text-sm font-medium text-gray-700 hover:bg-gray-100"
+      >
+        Demo Mode
+        <span className="text-gray-500">{open ? '▼' : '▶'}</span>
+      </button>
+      {open && (
+        <div className="px-6 pb-4 space-y-4 text-sm">
+          <div>
+            <p className="font-medium text-gray-700 mb-1">Step 1 (Backend)</p>
+            <pre className="bg-gray-800 text-gray-100 rounded p-3 overflow-x-auto text-xs font-mono">
+{`python manage.py migrate
+python manage.py seed_demo_data --days 3 --per_day 50 --reviews 0.2
+python manage.py runserver`}
+            </pre>
+          </div>
+          <div>
+            <p className="font-medium text-gray-700 mb-1">Step 2 (Frontend)</p>
+            <pre className="bg-gray-800 text-gray-100 rounded p-3 overflow-x-auto text-xs font-mono">
+{`npm install
+npm run dev`}
+            </pre>
+          </div>
+          <div>
+            <p className="font-medium text-gray-700 mb-1">Step 3 (Open)</p>
+            <p className="text-gray-600">
+              Frontend: <a href="http://localhost:5173" target="_blank" rel="noreferrer" className="text-blue-600 underline">http://localhost:5173</a>
+              <br />
+              Backend: <a href="http://127.0.0.1:8000/health" target="_blank" rel="noreferrer" className="text-blue-600 underline">http://127.0.0.1:8000/health</a>
+            </p>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function Home() {
   const [connected, setConnected] = useState<boolean | null>(null);
   const [activeTab, setActiveTab] = useState<TabId>('simulator');
@@ -36,6 +79,8 @@ export function Home() {
           {connected !== null && <StatusBadge connected={connected} />}
         </div>
       </header>
+
+      <DemoModePanel />
 
       <div className="border-b border-gray-200 px-6">
         <nav className="flex gap-1" role="tablist">

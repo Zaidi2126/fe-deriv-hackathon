@@ -23,6 +23,48 @@ const defaultPayload: PayoutDecisionRequest = {
   deposits_last_1h: 0,
 };
 
+const QUICK_FILL_PRESETS: { label: string; payload: PayoutDecisionRequest }[] = [
+  {
+    label: 'Clean Approve',
+    payload: {
+      ...defaultPayload,
+      vpn_detected: false,
+      expected_country: 'US',
+      country: 'US',
+      withdrawals_last_1h: 0,
+      total_trades: 10,
+      total_trade_volume: 1000,
+      payment_method_age_days: 30,
+    },
+  },
+  {
+    label: 'No Trade Fraud',
+    payload: {
+      ...defaultPayload,
+      total_trades: 0,
+      total_trade_volume: 0,
+      payment_method_age_days: 0,
+    },
+  },
+  {
+    label: 'Velocity Abuse',
+    payload: {
+      ...defaultPayload,
+      withdrawals_last_1h: 5,
+      withdrawals_last_24h: 10,
+    },
+  },
+  {
+    label: 'Geo VPN Anomaly',
+    payload: {
+      ...defaultPayload,
+      vpn_detected: true,
+      expected_country: 'US',
+      country: 'AE',
+    },
+  },
+];
+
 function DecisionBadge({ decision }: { decision: string }) {
   const d = decision.toLowerCase();
   const styles =
@@ -103,11 +145,33 @@ export function DecisionSimulator() {
 
   const idx = result?.confidence_and_regret_index;
 
+  const applyPreset = (preset: PayoutDecisionRequest) => {
+    setResult(null);
+    setError(null);
+    setValidationErrors([]);
+    setPayload(preset);
+  };
+
   return (
     <div className="border-t border-gray-200 px-6 py-6">
       <h2 className="text-lg font-semibold text-gray-900 mb-4">
         Decision Simulator
       </h2>
+      <div className="mb-4">
+        <p className="text-sm font-medium text-gray-700 mb-2">Quick Fill Buttons</p>
+        <div className="flex flex-wrap gap-2">
+          {QUICK_FILL_PRESETS.map(({ label, payload: p }) => (
+            <button
+              key={label}
+              type="button"
+              onClick={() => applyPreset(p)}
+              className="rounded border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
       <form onSubmit={handleSubmit} className="flex flex-col lg:flex-row gap-8">
         {/* Left: form */}
         <div className="flex-1 max-w-md space-y-4">
