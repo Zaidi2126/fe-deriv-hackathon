@@ -4,7 +4,7 @@ const baseURL =
   typeof import.meta.env.VITE_API_BASE_URL === 'string' &&
   import.meta.env.VITE_API_BASE_URL.trim() !== ''
     ? import.meta.env.VITE_API_BASE_URL.trim().replace(/\/$/, '')
-    : 'http://127.0.0.1:8000';
+    : 'https://shehroz1234.pythonanywhere.com';
 
 export const apiClient = axios.create({
   baseURL,
