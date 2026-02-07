@@ -89,7 +89,7 @@ export function EmergingPatternsPage() {
                   <div className="mt-3 pt-3 border-t border-gray-100">
                     <p className="text-xs font-medium text-gray-600 mb-1">Accounts</p>
                     <div className="flex flex-wrap gap-2">
-                      {p.account_ids.map((id) => (
+                      {(p.account_ids ?? []).map((id) => (
                         <Link
                           key={id}
                           to={`/fraud-network/${encodeURIComponent(id)}`}
@@ -101,21 +101,24 @@ export function EmergingPatternsPage() {
                     </div>
                   </div>
                 )}
-                {(p.transaction_ids?.length ?? 0) > 0 && (
+                {(p.transaction_ids?.length ?? 0) > 0 && (() => {
+                  const tids = p.transaction_ids ?? [];
+                  return (
                   <details className="mt-2">
                     <summary className="text-xs text-gray-500 cursor-pointer hover:text-gray-700">
-                      {p.transaction_ids.length} transaction ID(s)
+                      {tids.length} transaction ID(s)
                     </summary>
                     <ul className="mt-1 text-xs text-gray-600 font-mono list-none space-y-0.5">
-                      {p.transaction_ids.slice(0, 5).map((tid) => (
+                      {tids.slice(0, 5).map((tid) => (
                         <li key={tid}>{tid}</li>
                       ))}
-                      {p.transaction_ids.length > 5 && (
-                        <li className="text-gray-400">+{p.transaction_ids.length - 5} more</li>
+                      {tids.length > 5 && (
+                        <li className="text-gray-400">+{tids.length - 5} more</li>
                       )}
                     </ul>
                   </details>
-                )}
+                  );
+                })()}
               </div>
             ))}
           </div>
