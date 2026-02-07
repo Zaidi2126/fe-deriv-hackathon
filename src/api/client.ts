@@ -177,3 +177,38 @@ export async function getCalibrationMetrics(): Promise<CalibrationStat[]> {
   );
   return data;
 }
+
+// --- Payout history ---
+
+export interface PayoutHistoryItem {
+  created_at: string;
+  user_id: string;
+  amount: number;
+  currency: string;
+  decision: 'approve' | 'review' | 'block';
+  risk_score: number;
+  confidence_score: number;
+  regret_level: number;
+  human_final_decision?: 'approve' | 'review' | 'block' | null;
+  human_overrode?: boolean;
+  triggered_signals?: string[];
+  reasons?: string[];
+  counterfactuals?: string[];
+}
+
+export interface GetPayoutHistoryParams {
+  limit?: number;
+  decision?: 'approve' | 'review' | 'block';
+  user_id?: string;
+  days?: number;
+}
+
+export async function getPayoutHistory(
+  params: GetPayoutHistoryParams = {}
+): Promise<PayoutHistoryItem[]> {
+  const { data } = await apiClient.get<PayoutHistoryItem[]>(
+    '/api/payouts/history',
+    { params }
+  );
+  return data;
+}

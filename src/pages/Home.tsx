@@ -5,14 +5,16 @@ import { DecisionSimulator } from '../components/DecisionSimulator';
 import { RiskTrajectory } from '../components/RiskTrajectory';
 import { FraudReadiness } from '../components/FraudReadiness';
 import { Metrics } from '../components/Metrics';
+import { PayoutHistory } from '../components/PayoutHistory';
 
-type TabId = 'simulator' | 'trajectory' | 'readiness' | 'metrics';
+type TabId = 'simulator' | 'trajectory' | 'readiness' | 'metrics' | 'history';
 
 const TABS: { id: TabId; label: string }[] = [
   { id: 'simulator', label: 'Decision Simulator' },
   { id: 'trajectory', label: 'Risk Trajectory' },
   { id: 'readiness', label: 'Fraud Readiness' },
   { id: 'metrics', label: 'Metrics' },
+  { id: 'history', label: 'Payout History' },
 ];
 
 function DemoModePanel() {
@@ -108,6 +110,7 @@ export function Home() {
         {activeTab === 'trajectory' && <RiskTrajectory />}
         {activeTab === 'readiness' && <FraudReadiness />}
         {activeTab === 'metrics' && <Metrics />}
+        {activeTab === 'history' && <PayoutHistory />}
       </main>
     </div>
   );
