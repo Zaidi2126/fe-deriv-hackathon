@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { checkHealth } from '../api/client';
 import { StatusBadge } from '../components/StatusBadge';
+import { DecisionSimulator } from '../components/DecisionSimulator';
 
 export function Home() {
   const [connected, setConnected] = useState<boolean | null>(null);
@@ -22,6 +23,7 @@ export function Home() {
           {connected !== null && <StatusBadge connected={connected} />}
         </div>
       </header>
+      <DecisionSimulator />
     </div>
   );
 }

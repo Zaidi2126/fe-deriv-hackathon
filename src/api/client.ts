@@ -15,3 +15,49 @@ export async function checkHealth(): Promise<{ ok: boolean }> {
   await apiClient.get('/health');
   return { ok: true };
 }
+
+// --- Payout decision ---
+
+export interface PayoutDecisionRequest {
+  user_id: string;
+  amount: number;
+  currency: string;
+  payment_method_id: string;
+  payment_method_age_days: number;
+  country: string;
+  ip_address: string;
+  vpn_detected: boolean;
+  total_trades: number;
+  total_trade_volume: number;
+  expected_country?: string;
+  withdrawals_last_1h?: number;
+  withdrawals_last_24h?: number;
+  deposits_last_1h?: number;
+}
+
+export interface ConfidenceAndRegretIndex {
+  confidence_band?: string;
+  recommended_next_step?: string;
+  action_rationale?: string;
+}
+
+export interface PayoutDecisionResponse {
+  decision: 'approve' | 'review' | 'block';
+  risk_score: number;
+  confidence_score: number;
+  regret_level: number;
+  triggered_signals: string[];
+  reasons: string[];
+  counterfactuals: string[];
+  confidence_and_regret_index: ConfidenceAndRegretIndex;
+}
+
+export async function createPayoutDecision(
+  payload: PayoutDecisionRequest
+): Promise<PayoutDecisionResponse> {
+  const { data } = await apiClient.post<PayoutDecisionResponse>(
+    '/api/payouts/decision',
+    payload
+  );
+  return data;
+}
