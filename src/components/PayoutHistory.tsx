@@ -1,6 +1,10 @@
 import { useEffect, useState, useCallback, Fragment } from 'react';
+import { Link } from 'react-router-dom';
 import {
   getPayoutHistory,
+  submitReview,
+  getReviewExplanation,
+  submitResolveReview,
   type PayoutHistoryItem,
   type GetPayoutHistoryParams,
 } from '../api/client';
@@ -51,6 +55,14 @@ export function PayoutHistory() {
   const [error, setError] = useState<string | null>(null);
   const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [conflictRowId, setConflictRowId] = useState<string | null>(null);
+  const [conflictNote, setConflictNote] = useState('');
+  const [submittingId, setSubmittingId] = useState<string | null>(null);
+  const [reviewError, setReviewError] = useState<string | null>(null);
+  const [reviewPopupItem, setReviewPopupItem] = useState<PayoutHistoryItem | null>(null);
+  const [reviewExplanation, setReviewExplanation] = useState<string | null>(null);
+  const [reviewResolveNote, setReviewResolveNote] = useState('');
+  const [resolveLoading, setResolveLoading] = useState(false);
 
   const fetchHistory = useCallback(async () => {
     setLoading(true);
@@ -82,6 +94,90 @@ export function PayoutHistory() {
 
   const rowId = (item: PayoutHistoryItem, index: number) =>
     `${item.created_at}-${item.user_id}-${index}`;
+
+  const handleAccept = async (item: PayoutHistoryItem, id: string) => {
+    const rid = item.risk_decision_id ?? id;
+    setSubmittingId(id);
+    setReviewError(null);
+    try {
+      await submitReview({
+        risk_decision_id: rid,
+        reviewer_id: 'demo_reviewer',
+        action: 'accept',
+      });
+      await fetchHistory();
+    } catch (err: unknown) {
+      setReviewError(
+        err && typeof err === 'object' && 'message' in err
+          ? String((err as { message: string }).message)
+          : 'Failed to submit.'
+      );
+    } finally {
+      setSubmittingId(null);
+    }
+  };
+
+  const handleConflict = async (item: PayoutHistoryItem, id: string) => {
+    const rid = item.risk_decision_id ?? id;
+    if (!conflictNote.trim()) return;
+    const finalDecision = item.decision === 'approve' ? 'block' : 'approve';
+    setSubmittingId(id);
+    setReviewError(null);
+    try {
+      await submitReview({
+        risk_decision_id: rid,
+        reviewer_id: 'demo_reviewer',
+        action: 'conflict',
+        final_decision: finalDecision,
+        note: conflictNote.trim(),
+      });
+      setConflictRowId(null);
+      setConflictNote('');
+      await fetchHistory();
+    } catch (err: unknown) {
+      setReviewError(
+        err && typeof err === 'object' && 'message' in err
+          ? String((err as { message: string }).message)
+          : 'Failed to submit.'
+      );
+    } finally {
+      setSubmittingId(null);
+    }
+  };
+
+  const openReviewPopup = (item: PayoutHistoryItem, index: number) => {
+    setReviewPopupItem(item);
+    setReviewExplanation(null);
+    setReviewResolveNote('');
+    setReviewError(null);
+    const rid = item.risk_decision_id ?? rowId(item, index);
+    getReviewExplanation(rid)
+      .then((r) => setReviewExplanation(r.explanation))
+      .catch(() => setReviewExplanation('(Could not load explanation)'));
+  };
+
+  const handleResolve = async (finalDecision: 'approve' | 'block') => {
+    if (!reviewPopupItem) return;
+    const idx = items.findIndex(
+      (i) => i.created_at === reviewPopupItem.created_at && i.user_id === reviewPopupItem.user_id
+    );
+    const rid = reviewPopupItem.risk_decision_id ?? rowId(reviewPopupItem, idx >= 0 ? idx : 0);
+    setResolveLoading(true);
+    setReviewError(null);
+    try {
+      await submitResolveReview(rid, finalDecision, reviewResolveNote);
+      setReviewPopupItem(null);
+      await fetchHistory();
+    } catch (err: unknown) {
+      setReviewError(
+        err && typeof err === 'object' && 'message' in err
+          ? String((err as { message: string }).message)
+          : 'Failed to resolve.'
+      );
+    } finally {
+      setResolveLoading(false);
+    }
+  };
 
   return (
     <div className="space-y-4">
@@ -146,6 +242,11 @@ export function PayoutHistory() {
           {error}
         </div>
       )}
+      {reviewError && (
+        <div className="rounded border border-red-200 bg-red-50 p-3 text-red-800 text-sm">
+          {reviewError}
+        </div>
+      )}
 
       <div className="overflow-x-auto rounded border border-gray-200">
         {items.length === 0 && !loading ? (
@@ -193,22 +294,39 @@ export function PayoutHistory() {
                   <Fragment key={id}>
                     <tr
                       key={id}
-                      onClick={() =>
-                        setExpandedId(isExpanded ? null : id)
-                      }
+                      onClick={(e) => {
+                        if ((e.target as HTMLElement).closest('td[data-no-expand]')) return;
+                        setExpandedId(isExpanded ? null : id);
+                      }}
                       className="border-b border-gray-100 last:border-0 hover:bg-gray-50 cursor-pointer"
                     >
                       <td className="px-4 py-2 text-gray-900 whitespace-nowrap">
                         {formatDateTime(item.created_at)}
                       </td>
                       <td className="px-4 py-2 text-gray-900">
-                        {item.user_id}
+                        <span className="block">{item.user_id}</span>
+                        <Link
+                          to={`/fraud-network/${encodeURIComponent(item.user_id)}`}
+                          className="text-xs text-blue-600 hover:underline"
+                        >
+                          View fraud network
+                        </Link>
                       </td>
                       <td className="px-4 py-2 text-gray-900 text-right">
                         {item.amount} {item.currency}
                       </td>
-                      <td className="px-4 py-2">
-                        <DecisionBadge decision={item.decision} />
+                      <td className="px-4 py-2" data-no-expand onClick={(e) => e.stopPropagation()}>
+                        {item.decision === 'review' && item.human_final_decision == null ? (
+                            <button
+                              type="button"
+                              onClick={() => openReviewPopup(item, index)}
+                              className="inline-block rounded border border-amber-300 bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-800 hover:bg-amber-100 cursor-pointer"
+                            >
+                            Review
+                          </button>
+                        ) : (
+                          <DecisionBadge decision={item.decision} />
+                        )}
                       </td>
                       <td className="px-4 py-2 text-gray-900 text-right">
                         {item.risk_score}
@@ -219,11 +337,84 @@ export function PayoutHistory() {
                       <td className="px-4 py-2 text-gray-900 text-right">
                         {item.regret_level}
                       </td>
-                      <td className="px-4 py-2">
-                        {item.human_final_decision != null ? (
-                          <DecisionBadge decision={item.human_final_decision} />
+                      <td
+                        className="px-4 py-2 align-top"
+                        data-no-expand
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        {item.decision === 'review' ? (
+                          item.human_final_decision != null ? (
+                            <DecisionBadge decision={item.human_final_decision} />
+                          ) : (
+                            <span className="text-gray-400">—</span>
+                          )
+                        ) : item.human_final_decision != null ? (
+                          item.human_overrode ? (
+                            <span
+                              className="text-amber-700 text-xs font-medium"
+                              title={item.human_note ?? undefined}
+                            >
+                              Conflicted
+                              {item.human_note && (
+                                <span className="block text-gray-600 font-normal truncate max-w-[180px]" title={item.human_note}>
+                                  {item.human_note}
+                                </span>
+                              )}
+                            </span>
+                          ) : (
+                            <span className="text-green-700 text-xs font-medium">Accepted</span>
+                          )
+                        ) : conflictRowId === id ? (
+                          <div className="space-y-2 min-w-[200px]">
+                            <p className="text-xs text-gray-600">
+                              Opposite of system ({item.decision} → {item.decision === 'approve' ? 'block' : 'approve'})
+                            </p>
+                            <textarea
+                              value={conflictNote}
+                              onChange={(e) => setConflictNote(e.target.value)}
+                              placeholder="Note (required)"
+                              rows={2}
+                              className="block w-full rounded border border-gray-300 px-2 py-1 text-xs text-gray-900"
+                            />
+                            <div className="flex gap-1 flex-wrap">
+                              <button
+                                type="button"
+                                onClick={() => handleConflict(item, id)}
+                                disabled={submittingId === id || !conflictNote.trim()}
+                                className="rounded bg-amber-600 px-2 py-1 text-xs font-medium text-white disabled:opacity-50"
+                              >
+                                {submittingId === id ? '…' : 'Submit Conflict'}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setConflictRowId(null);
+                                  setConflictNote('');
+                                }}
+                                className="rounded border border-gray-300 px-2 py-1 text-xs text-gray-700"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          </div>
                         ) : (
-                          <span className="text-gray-400">—</span>
+                          <div className="flex flex-wrap gap-1">
+                            <button
+                              type="button"
+                              onClick={() => handleAccept(item, id)}
+                              disabled={submittingId === id}
+                              className="rounded border border-gray-300 bg-white px-2 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                            >
+                              {submittingId === id ? '…' : 'Accept'}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setConflictRowId(id)}
+                              className="rounded border border-amber-300 bg-amber-50 px-2 py-1 text-xs font-medium text-amber-800 hover:bg-amber-100"
+                            >
+                              Conflict
+                            </button>
+                          </div>
                         )}
                       </td>
                       <td className="px-4 py-2">
@@ -295,6 +486,82 @@ export function PayoutHistory() {
           </table>
         )}
       </div>
+
+      {/* Review popup (decision = "review") */}
+      {reviewPopupItem && (
+        <div
+          className="fixed inset-0 z-10 flex items-center justify-center bg-black/50 p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="review-popup-title"
+        >
+          <div className="rounded border border-gray-200 bg-white p-6 max-w-lg w-full shadow-lg max-h-[90vh] overflow-y-auto">
+            <h4 id="review-popup-title" className="text-sm font-semibold text-gray-900 mb-3">
+              Why it was sent for review
+            </h4>
+            <p className="text-sm text-gray-800 mb-4 whitespace-pre-wrap">
+              {reviewExplanation ?? 'Loading…'}
+            </p>
+            <div className="rounded border border-gray-200 bg-gray-50 p-3 mb-4 text-sm text-gray-700">
+              <p><strong>{reviewPopupItem.user_id}</strong> · {reviewPopupItem.amount} {reviewPopupItem.currency}</p>
+              <p>Risk score: {reviewPopupItem.risk_score}</p>
+              {(reviewPopupItem.triggered_signals ?? []).length > 0 && (
+                <p>Signals: {(reviewPopupItem.triggered_signals ?? []).join(', ')}</p>
+              )}
+              {(reviewPopupItem.reasons ?? []).length > 0 && (
+                <ul className="list-disc list-inside mt-1">
+                  {(reviewPopupItem.reasons ?? []).slice(0, 3).map((r, i) => (
+                    <li key={i}>{r}</li>
+                  ))}
+                </ul>
+              )}
+            </div>
+            <label className="block mb-3">
+              <span className="text-sm font-medium text-gray-700">Note (optional)</span>
+              <textarea
+                value={reviewResolveNote}
+                onChange={(e) => setReviewResolveNote(e.target.value)}
+                placeholder="Optional note for this resolution"
+                rows={2}
+                className="mt-1 block w-full rounded border border-gray-300 px-3 py-2 text-sm text-gray-900"
+              />
+            </label>
+            {reviewError && (
+              <div className="rounded border border-red-200 bg-red-50 p-2 text-sm text-red-800 mb-3">
+                {reviewError}
+              </div>
+            )}
+            <div className="flex gap-2 flex-wrap">
+              <button
+                type="button"
+                onClick={() => handleResolve('approve')}
+                disabled={resolveLoading}
+                className="rounded bg-green-700 px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
+              >
+                {resolveLoading ? '…' : 'Approve'}
+              </button>
+              <button
+                type="button"
+                onClick={() => handleResolve('block')}
+                disabled={resolveLoading}
+                className="rounded bg-red-700 px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
+              >
+                {resolveLoading ? '…' : 'Block'}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setReviewPopupItem(null);
+                  setReviewError(null);
+                }}
+                className="rounded border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

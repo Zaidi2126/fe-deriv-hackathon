@@ -371,6 +371,54 @@ export function DecisionSimulator() {
                     className="mt-1 block w-full rounded border border-gray-300 px-3 py-2 text-gray-900"
                   />
                 </label>
+                <label className="block">
+                  <span className="text-sm font-medium text-gray-600">
+                    card_decline_count_24h
+                  </span>
+                  <input
+                    type="number"
+                    min={0}
+                    value={payload.card_decline_count_24h ?? ''}
+                    onChange={(e) =>
+                      update(
+                        'card_decline_count_24h',
+                        e.target.value === '' ? undefined : Number(e.target.value)
+                      )
+                    }
+                    className="mt-1 block w-full rounded border border-gray-300 px-3 py-2 text-gray-900"
+                  />
+                </label>
+                <label className="block">
+                  <span className="text-sm font-medium text-gray-600">
+                    failed_login_count_24h
+                  </span>
+                  <input
+                    type="number"
+                    min={0}
+                    value={payload.failed_login_count_24h ?? ''}
+                    onChange={(e) =>
+                      update(
+                        'failed_login_count_24h',
+                        e.target.value === '' ? undefined : Number(e.target.value)
+                      )
+                    }
+                    className="mt-1 block w-full rounded border border-gray-300 px-3 py-2 text-gray-900"
+                  />
+                </label>
+                <label className="block sm:col-span-2">
+                  <span className="text-sm font-medium text-gray-600">
+                    device_id
+                  </span>
+                  <input
+                    type="text"
+                    value={payload.device_id ?? ''}
+                    onChange={(e) =>
+                      update('device_id', e.target.value || undefined)
+                    }
+                    placeholder="Optional"
+                    className="mt-1 block w-full rounded border border-gray-300 px-3 py-2 text-gray-900"
+                  />
+                </label>
               </div>
             )}
           </div>

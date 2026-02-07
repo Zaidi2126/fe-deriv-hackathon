@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { checkHealth } from '../api/client';
 import { StatusBadge } from '../components/StatusBadge';
 import { DecisionSimulator } from '../components/DecisionSimulator';
@@ -6,8 +7,9 @@ import { RiskTrajectory } from '../components/RiskTrajectory';
 import { FraudReadiness } from '../components/FraudReadiness';
 import { Metrics } from '../components/Metrics';
 import { PayoutHistory } from '../components/PayoutHistory';
+import { Admin } from '../components/Admin';
 
-type TabId = 'simulator' | 'trajectory' | 'readiness' | 'metrics' | 'history';
+type TabId = 'simulator' | 'trajectory' | 'readiness' | 'metrics' | 'history' | 'admin';
 
 const TABS: { id: TabId; label: string }[] = [
   { id: 'simulator', label: 'Decision Simulator' },
@@ -15,6 +17,7 @@ const TABS: { id: TabId; label: string }[] = [
   { id: 'readiness', label: 'Fraud Readiness' },
   { id: 'metrics', label: 'Metrics' },
   { id: 'history', label: 'Payout History' },
+  { id: 'admin', label: 'Admin' },
 ];
 
 function DemoModePanel() {
@@ -77,8 +80,12 @@ export function Home() {
           AI Payments Approval & Fraud Intelligence
         </h1>
         <p className="mt-1 text-sm text-gray-500">Live Risk Engine Demo</p>
-        <div className="mt-4">
+        <div className="mt-4 flex flex-wrap items-center gap-4">
           {connected !== null && <StatusBadge connected={connected} />}
+          <span className="text-gray-400">|</span>
+          <Link to="/query" className="text-sm text-blue-600 hover:underline">Ask a question</Link>
+          <Link to="/patterns/emerging" className="text-sm text-blue-600 hover:underline">Emerging patterns</Link>
+          <Link to="/incidents/bulk" className="text-sm text-blue-600 hover:underline">Bulk flag</Link>
         </div>
       </header>
 
@@ -111,6 +118,7 @@ export function Home() {
         {activeTab === 'readiness' && <FraudReadiness />}
         {activeTab === 'metrics' && <Metrics />}
         {activeTab === 'history' && <PayoutHistory />}
+        {activeTab === 'admin' && <Admin />}
       </main>
     </div>
   );

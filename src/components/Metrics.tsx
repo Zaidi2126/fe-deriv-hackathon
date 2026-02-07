@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from 'react';
 import {
   getDailyMetrics,
   getCalibrationMetrics,
+  sendDailySummary,
   type DailyMetric,
   type CalibrationStat,
 } from '../api/client';
@@ -31,6 +32,11 @@ export function Metrics() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
+  const [webhookUrl, setWebhookUrl] = useState(
+    (import.meta.env.VITE_SLACK_WEBHOOK_URL as string) || ''
+  );
+  const [reportLoading, setReportLoading] = useState(false);
+  const [reportMessage, setReportMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   const fetchAll = useCallback(async () => {
     setLoading(true);
@@ -61,6 +67,35 @@ export function Metrics() {
   const dailyRows = daily.slice(0, ROWS_LIMIT);
   const calibrationRows = calibration.slice(0, ROWS_LIMIT);
 
+  const handleSendReport = async () => {
+    setReportMessage(null);
+    const url = webhookUrl.trim();
+    if (!url) {
+      setReportMessage({ type: 'error', text: 'Please enter a Slack webhook URL.' });
+      return;
+    }
+    setReportLoading(true);
+    try {
+      await sendDailySummary(url);
+      setReportMessage({ type: 'success', text: 'Daily summary sent to Slack.' });
+    } catch (err: unknown) {
+      const res = err && typeof err === 'object' && 'response' in err
+        ? (err as { response: { status: number } }).response
+        : null;
+      if (res?.status === 400) {
+        setReportMessage({ type: 'error', text: 'Missing or invalid webhook URL.' });
+      } else if (res?.status === 404) {
+        setReportMessage({ type: 'error', text: 'No data to report.' });
+      } else if (res?.status === 502) {
+        setReportMessage({ type: 'error', text: 'Slack request failed.' });
+      } else {
+        setReportMessage({ type: 'error', text: 'Failed to send report.' });
+      }
+    } finally {
+      setReportLoading(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
@@ -87,6 +122,44 @@ export function Metrics() {
           {error}
         </div>
       )}
+
+      {/* Send daily summary to Slack */}
+      <section className="rounded border border-gray-200 bg-gray-50 p-4">
+        <h3 className="text-sm font-semibold text-gray-800 mb-2">
+          Send daily summary to Slack
+        </h3>
+        <div className="flex flex-wrap items-end gap-3">
+          <label className="flex-1 min-w-[200px]">
+            <span className="text-sm font-medium text-gray-700">Slack Incoming Webhook URL</span>
+            <input
+              type="url"
+              value={webhookUrl}
+              onChange={(e) => setWebhookUrl(e.target.value)}
+              placeholder="https://hooks.slack.com/services/..."
+              className="mt-1 block w-full rounded border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400"
+            />
+          </label>
+          <button
+            type="button"
+            onClick={handleSendReport}
+            disabled={reportLoading}
+            className="rounded bg-gray-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
+          >
+            {reportLoading ? 'Sending…' : 'Send report'}
+          </button>
+        </div>
+        {reportMessage && (
+          <div
+            className={
+              reportMessage.type === 'success'
+                ? 'mt-3 text-sm text-green-700'
+                : 'mt-3 text-sm text-red-700'
+            }
+          >
+            {reportMessage.text}
+          </div>
+        )}
+      </section>
 
       {/* Section A: Daily Metrics */}
       <section>
