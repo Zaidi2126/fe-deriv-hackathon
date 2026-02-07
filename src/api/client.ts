@@ -61,3 +61,31 @@ export async function createPayoutDecision(
   );
   return data;
 }
+
+// --- Risk trajectory ---
+
+export interface RiskTrajectoryPoint {
+  ts: string;
+  risk_score: number;
+  decision: string;
+}
+
+export interface RiskTrajectoryResponse {
+  user_id: string;
+  window_days: number;
+  points: RiskTrajectoryPoint[];
+  trend: 'rising' | 'falling' | 'flat';
+  momentum: number;
+  summary: string;
+}
+
+export async function getRiskTrajectory(
+  userId: string,
+  days: number
+): Promise<RiskTrajectoryResponse> {
+  const { data } = await apiClient.get<RiskTrajectoryResponse>(
+    `/api/users/${encodeURIComponent(userId)}/risk-trajectory`,
+    { params: { days } }
+  );
+  return data;
+}

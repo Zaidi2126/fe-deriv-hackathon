@@ -2,9 +2,28 @@ import { useEffect, useState } from 'react';
 import { checkHealth } from '../api/client';
 import { StatusBadge } from '../components/StatusBadge';
 import { DecisionSimulator } from '../components/DecisionSimulator';
+import { RiskTrajectory } from '../components/RiskTrajectory';
+
+type TabId = 'simulator' | 'trajectory' | 'readiness' | 'metrics';
+
+const TABS: { id: TabId; label: string }[] = [
+  { id: 'simulator', label: 'Decision Simulator' },
+  { id: 'trajectory', label: 'Risk Trajectory' },
+  { id: 'readiness', label: 'Fraud Readiness' },
+  { id: 'metrics', label: 'Metrics' },
+];
+
+function PlaceholderCard({ title }: { title: string }) {
+  return (
+    <div className="rounded border border-gray-200 bg-gray-50 p-8 text-center text-gray-500">
+      {title} — coming soon
+    </div>
+  );
+}
 
 export function Home() {
   const [connected, setConnected] = useState<boolean | null>(null);
+  const [activeTab, setActiveTab] = useState<TabId>('simulator');
 
   useEffect(() => {
     checkHealth()
@@ -23,7 +42,36 @@ export function Home() {
           {connected !== null && <StatusBadge connected={connected} />}
         </div>
       </header>
-      <DecisionSimulator />
+
+      <div className="border-b border-gray-200 px-6">
+        <nav className="flex gap-1" role="tablist">
+          {TABS.map(({ id, label }) => (
+            <button
+              key={id}
+              type="button"
+              role="tab"
+              aria-selected={activeTab === id}
+              onClick={() => setActiveTab(id)}
+              className={
+                activeTab === id
+                  ? 'border-b-2 border-gray-900 px-4 py-3 text-sm font-medium text-gray-900'
+                  : 'border-b-2 border-transparent px-4 py-3 text-sm font-medium text-gray-500 hover:text-gray-700'
+              }
+            >
+              {label}
+            </button>
+          ))}
+        </nav>
+      </div>
+
+      <main className="px-6 py-6">
+        {activeTab === 'simulator' && <DecisionSimulator />}
+        {activeTab === 'trajectory' && <RiskTrajectory />}
+        {activeTab === 'readiness' && (
+          <PlaceholderCard title="Fraud Readiness" />
+        )}
+        {activeTab === 'metrics' && <PlaceholderCard title="Metrics" />}
+      </main>
     </div>
   );
 }
