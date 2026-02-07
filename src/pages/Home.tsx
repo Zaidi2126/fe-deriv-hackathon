@@ -3,6 +3,7 @@ import { checkHealth } from '../api/client';
 import { StatusBadge } from '../components/StatusBadge';
 import { DecisionSimulator } from '../components/DecisionSimulator';
 import { RiskTrajectory } from '../components/RiskTrajectory';
+import { FraudReadiness } from '../components/FraudReadiness';
 
 type TabId = 'simulator' | 'trajectory' | 'readiness' | 'metrics';
 
@@ -67,9 +68,7 @@ export function Home() {
       <main className="px-6 py-6">
         {activeTab === 'simulator' && <DecisionSimulator />}
         {activeTab === 'trajectory' && <RiskTrajectory />}
-        {activeTab === 'readiness' && (
-          <PlaceholderCard title="Fraud Readiness" />
-        )}
+        {activeTab === 'readiness' && <FraudReadiness />}
         {activeTab === 'metrics' && <PlaceholderCard title="Metrics" />}
       </main>
     </div>

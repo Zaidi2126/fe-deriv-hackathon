@@ -89,3 +89,54 @@ export async function getRiskTrajectory(
   );
   return data;
 }
+
+// --- Fraud readiness ---
+
+export type FraudReadinessScenario =
+  | 'no_trade_fraud'
+  | 'short_trade_abuse'
+  | 'new_payment_method_risk'
+  | 'velocity_abuse'
+  | 'geo_vpn_anomaly';
+
+export interface FraudReadinessRequest {
+  user_id: string;
+  amount: number;
+  currency: string;
+  payment_method_id: string;
+  payment_method_age_days: number;
+  country: string;
+  ip_address: string;
+  vpn_detected: boolean;
+  total_trades: number;
+  total_trade_volume: number;
+  expected_country?: string;
+  withdrawals_last_1h?: number;
+  withdrawals_last_24h?: number;
+  deposits_last_1h?: number;
+  scenarios?: FraudReadinessScenario[];
+}
+
+export interface FraudReadinessResult {
+  simulated_pattern: string;
+  simulated_risk_score: number;
+  readiness_level: 'low' | 'medium' | 'high';
+  decision: 'approve' | 'review' | 'block';
+  triggered_signals: string[];
+  reasons: string[];
+}
+
+export interface FraudReadinessResponse {
+  base_user_id: string;
+  results: FraudReadinessResult[];
+}
+
+export async function simulateFraudReadiness(
+  payload: FraudReadinessRequest
+): Promise<FraudReadinessResponse> {
+  const { data } = await apiClient.post<FraudReadinessResponse>(
+    '/api/fraud-readiness/simulate',
+    payload
+  );
+  return data;
+}
